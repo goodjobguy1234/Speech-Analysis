@@ -1,18 +1,49 @@
 from sys import path
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_file
 import os
 import tensorflow as tf
 from tensorflow import keras
 import random
 from pydub import AudioSegment
+import pathlib 
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import tensorflow as tf
+
+from tensorflow.keras.layers.experimental import preprocessing
+from tensorflow.keras import layers
+from tensorflow.keras import models
+from IPython import display
 
 from werkzeug.utils import secure_filename
 
-app = Flask(__name__)
+UPLOAD_FOLDER = 'uploads/'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def decode_audio(audio_binary):
+  audio, _ = tf.audio.decode_wav(audio_binary)
+  return tf.squeeze(audio, axis=-1)
+
+def get_label(file_path):
+  parts = tf.strings.split(file_path, os.path.sep)
+
+  # Note: You'll use indexing here instead of tuple unpacking to enable this 
+  # to work in a TensorFlow graph.
+  return parts[-2]
+
+def get_waveform_and_label(file_path):
+  label = get_label(file_path)
+  audio_binary = tf.io.read_file(file_path)
+  waveform = decode_audio(audio_binary)
+  return waveform, label
 
 @app.route("/", methods=["GET","POST"])
-def predict():
+def uploads_file():
     if request.method == "POST":
         if "file" not in request.files:
             return redirect(request.url)
@@ -25,28 +56,23 @@ def predict():
         if file:
         # get file from POST request and save it
         #wav
-            save_filename_path = "test.wav"
+            mpath = pathlib.Path('Speech-Analysis\saved_model\my_model.h5')
+            new_model = tf.keras.models.load_model(mpath)
 
-            audio_file = AudioSegment.from_file(file)
-            audio_file.export(save_filename_path, format="wav")
-            print("Show me: ", audio_file)
-           # dst = "test.wav"
-           # save_filename = 'static/' + secure_filename(file.filename)
-           # file_name = str(random.randint(0, 100000))
-           # audio_file.save(file_name)
-
+            audio_decode = decode_audio(file.read())
+            audio_path = pathlib.Path(str(file))
+            AUTOTUNE = tf.data.AUTOTUNE
+            print(audio_path)
+            audio_numpy = audio_decode.numpy()
+            plt.rcParams["figure.figsize"] = [7.50, 3.50]
+            plt.rcParams["figure.autolayout"] = True
+            plt.plot(audio_numpy)
+            plt.show()
+            # new_model.predict(audio_numpy)
+        
         
     return render_template("index.html")
 
-
-#@app.route("/submit", methods=['POST'])
-#def submit():
-#    # html -> .py
-#    if request.method == "POST":
-#        name = request.form["filename"]
-
-    # .py -> html
-#    return render_template("submit.html", n=name)
 
 
 if __name__ == "__main__":
