@@ -85,29 +85,22 @@ def uploads_file():
         if file:
         # get file from POST request and save it
         #wav
+
             mpath = pathlib.Path('Speech-Analysis\saved_model\my_model.h5')
             model = tf.keras.models.load_model(mpath)
-            # audio_decode = decode_audio(file.read())
 
             sample_file = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+         
             file.save(sample_file)
+        
+            sample_file = pathlib.Path(sample_file)
 
-            # audio_numpy = audio_decode.numpy()
-            # plt.rcParams["figure.figsize"] = [7.50, 3.50]
-            # plt.rcParams["figure.autolayout"] = True
-            # plt.plot(audio_numpy)
-            # plt.show()
-            # new_model.predict(audio_numpy)
-            
-            sample_file = pathlib.Path('Speech-Analysis/mini_speech_commands/fuck/fuck2.wav')
             sample_ds = preprocess_dataset([str(sample_file)])
-            print(str(sample_file))
-            tf.print(sample_ds)
           
             for spectrogram, label in sample_ds.batch(1):
               prediction = model(spectrogram)
               plt.bar(commands, tf.nn.softmax(prediction[0]))
-              plt.title(f'Predictions for "{commands[label[0]]}"')
+              plt.title(f'Audio Prediction')
               plt.show()
         
     return render_template("index.html")
